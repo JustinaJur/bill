@@ -1,17 +1,16 @@
 <template>
-  <img alt="Vue logo" src="./assets/logo.png">
-  <HelloWorld msg="Welcome to Your Vue.js App"/>
+  <BillGenerator msg="Welcome to bills generator" />
 </template>
 
 <script>
-import HelloWorld from './components/HelloWorld.vue'
+import BillGenerator from "./components/BillGenerator.vue";
 
 export default {
-  name: 'App',
+  name: "App",
   components: {
-    HelloWorld
-  }
-}
+    BillGenerator,
+  },
+};
 </script>
 
 <style>
