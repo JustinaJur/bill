@@ -1,6 +1,6 @@
 <template>
   <div class="billGenerator">
-    test
+    test nauajs
     <h1>{{ msg }}</h1>
     <div>
       <input type="file" @change="getExcelFiletableData" />
@@ -30,6 +30,7 @@ export default {
   },
   methods: {
     getExcelFiletableData(event) {
+      console.log(process);
       let xlsxfile = event.target.files ? event.target.files[0] : null;
       readXlsxFile(xlsxfile).then((filetableData) => {
         this.transformExceltableData(filetableData);
