@@ -17,5 +17,5 @@ module.exports = defineConfig({
       })
     ],
   },
-  publicPath: process.env.BILL_APP_ENV === 'production' ? '/bill-i9nh.onrender.com/' : '/',
+  publicPath: process.env.VUE_APP_ENV === 'production' ? '/bill-i9nh.onrender.com/' : '/',
 });
