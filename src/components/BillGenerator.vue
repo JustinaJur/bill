@@ -1,5 +1,6 @@
 <template>
   <div class="billGenerator">
+    test
     <h1>{{ msg }}</h1>
     <div>
       <input type="file" @change="getExcelFiletableData" />
