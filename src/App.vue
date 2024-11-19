@@ -1,5 +1,5 @@
 <template>
-  <BillGenerator msg="Welcome to bills generator" />
+  <BillGenerator msg="Sąskaitų generatorius" />
 </template>
 
 <script>
