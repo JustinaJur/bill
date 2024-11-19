@@ -198,7 +198,7 @@ export default {
       //   generatedPDFData: [],
       // };
 
-      bodyExcel.forEach((person, index) => {
+      bodyExcel.forEach((person) => {
         console.log(person);
         let { amount, parent } = person;
         // logData.generatedPDFData.push({ person, amount });
