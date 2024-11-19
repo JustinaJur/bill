@@ -21,13 +21,11 @@
         class="cosmic-button"
         @click="this.generatePDF(), (this.isLoading = true)"
         :disabled="
-          isLoading ||
-          bodyExcel == null ||
-          accountNumber == null ||
-          fullName == null
+          bodyExcel == null || accountNumber == null || fullName == null
         "
       >
-        {{ isLoading ? "Generuojami PDF" : "Gauti PDF" }}
+        <!-- {{ isLoading ? "Generuojami PDF" : "Gauti PDF" }} -->
+        "Gauti PDF"
       </button>
     </div>
   </div>
@@ -52,7 +50,7 @@ export default {
     return {
       headersExcel: null,
       bodyExcel: null,
-      isLoading: false,
+      /// isLoading: false,
       fileName: null,
       selectedDate: null,
       fullName: null,
@@ -196,7 +194,7 @@ export default {
         doc.autoTable(this.generateTableValues(headersTable, bodyTable));
         doc.save(`Sąskaita_${parent}.pdf`);
       });
-      this.isLoading = false;
+      // this.isLoading = false;
     },
   },
 };
