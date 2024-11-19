@@ -19,15 +19,15 @@
       </div>
       <button
         class="cosmic-button"
-        @click="this.generatePDF(), (isPDFLoading = true)"
+        @click="this.generatePDF(), (this.isLoading = true)"
         :disabled="
-          isPDFLoading ||
+          isLoading ||
           bodyExcel == null ||
           accountNumber == null ||
           fullName == null
         "
       >
-        {{ isPDFLoading ? "Generuojami PDF" : "Gauti PDF" }}
+        {{ isLoading ? "Generuojami PDF" : "Gauti PDF" }}
       </button>
     </div>
   </div>
@@ -52,7 +52,7 @@ export default {
     return {
       headersExcel: null,
       bodyExcel: null,
-      isPDFLoading: false,
+      isLoading: false,
       fileName: null,
       selectedDate: null,
       fullName: null,
@@ -185,36 +185,18 @@ export default {
       ];
     },
     async generatePDF() {
-      let doc = await new jsPDF();
       let { bodyExcel, price } = this;
 
-      // let logData = {
-      //   // Logging props and data
-      //   props: this.$props,
-      //   data: this.$data,
-      //   price,
-      //   headersExcel: this.headersExcel,
-      //   bodyExcel: this.bodyExcel,
-      //   generatedPDFData: [],
-      // };
-
       bodyExcel.forEach((person) => {
-        console.log(person);
+        let doc = new jsPDF();
         let { amount, parent } = person;
-        // logData.generatedPDFData.push({ person, amount });
 
         this.generatePersonalInfo(doc, person);
         const bodyTable = this.generateBodyTable(Number(amount), price);
-
         doc.autoTable(this.generateTableValues(headersTable, bodyTable));
         doc.save(`Sąskaita_${parent}.pdf`);
       });
-      this.isPDFLoading = false;
-
-      // console.log("Component Data (this.$data):", this.$data);
-      // console.log("Component Props (this.$props):", this.$props);
-      // // Log all variables and props after PDF generation
-      // console.log("All variables at the end of execution:", logData);
+      this.isLoading = false;
     },
   },
 };
