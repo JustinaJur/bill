@@ -25,7 +25,7 @@
         "
       >
         <!-- {{ isLoading ? "Generuojami PDF" : "Gauti PDF" }} -->
-        "Gauti PDF"
+        Gauti PDF
       </button>
     </div>
   </div>
