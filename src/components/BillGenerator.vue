@@ -1,9 +1,34 @@
 <template>
-  <div class="billGenerator">
+  <div class="bill-generator">
     <h1>{{ msg }}</h1>
     <div>
-      <input type="file" @change="getExcelFiletableData" />
-      <button @click="generatePDF">download PDF</button>
+      <div class="bill-generator_input-fields">
+        <label>Vardas Pavardė</label>
+        <input type="input" placeholder="Vardas Pavardė" v-model="fullName" />
+        <label>Sąskaitos numeris</label>
+        <input
+          type="input"
+          placeholder="Sąskaitos numeris"
+          v-model="accountNumber"
+        />
+        <label>Sąskaitos data</label>
+        <input type="date" v-model="selectedDate" />
+        <label>Pamokos kaina</label>
+        <input type="number" v-model="price" />
+        <input type="file" @change="getExcelextractedExcelData" />
+      </div>
+      <button
+        class="cosmic-button"
+        @click="this.generatePDF(), (this.isLoading = true)"
+        :disabled="
+          isLoading ||
+          bodyExcel == null ||
+          accountNumber == null ||
+          fullName == null
+        "
+      >
+        {{ isLoading ? "Generuojami PDF" : "Gauti PDF" }}
+      </button>
     </div>
   </div>
 </template>
@@ -13,59 +38,94 @@ import { jsPDF } from "jspdf";
 import readXlsxFile from "read-excel-file";
 import "jspdf-autotable";
 
-import { callAddFont } from "@/assets/fonts/ARIALUNI-normal.js";
-import { callAddFontBold } from "@/assets/fonts/Arial Unicode MS Bold-bold.js";
+import { getCurrentYearAndMonth, getCurrrentDate } from "@/helpers/date.js";
+import { loadFonts } from "@/helpers/fonts.js";
+import { createObjectsFromTwoArrays } from "@/helpers/dataTransformations.js";
+import { headersTable } from "@/constants.js";
 
 export default {
-  name: "BillGenerator",
+  name: "bill-generator",
   props: {
     msg: String,
   },
   data() {
     return {
-      headers: null,
-      tableData: [],
+      headersExcel: null,
+      bodyExcel: null,
+      isLoading: false,
+      fileName: null,
+      selectedDate: null,
+      fullName: null,
+      accountNumber: null,
+      price: 50,
     };
   },
+  created() {
+    this.selectedDate = getCurrrentDate();
+    loadFonts();
+  },
   methods: {
-    getExcelFiletableData(event) {
-      console.log(process);
+    getExcelextractedExcelData(event) {
+      let { headersExcel } = this;
       let xlsxfile = event.target.files ? event.target.files[0] : null;
-      readXlsxFile(xlsxfile).then((filetableData) => {
-        this.transformExceltableData(filetableData);
-      });
-    },
-    transformExceltableData(exceltableData) {
-      this.headers = exceltableData[0];
-      this.tableData = exceltableData.slice(1).map((row) => {
-        return this.headers.map((header, index) => {
-          return {
-            [header]: row[index],
-            content: row[index],
-          };
-        });
-      });
-    },
-    getCurrrentDate() {
-      const dateObj = new Date();
-      const month = dateObj.getUTCMonth() + 1;
-      const day = dateObj.getUTCDate();
-      const year = dateObj.getUTCFullYear();
 
-      const pMonth = month.toString().padStart(2, "0");
-      const pDay = day.toString().padStart(2, "0");
-      const currentPaddedDate = `${year}-${pMonth}-${pDay}`;
-      return currentPaddedDate;
+      if (xlsxfile) {
+        readXlsxFile(xlsxfile)
+          .then((extractedExcelData) => {
+            headersExcel = extractedExcelData[0];
+            let body = extractedExcelData.slice(1);
+            this.bodyExcel = createObjectsFromTwoArrays(headersExcel, body);
+          })
+          .catch((error) => {
+            alert("Netinkamas pdf formatas:", error);
+          });
+      }
     },
-    addBillingtableData(doc, billingtableData) {
-      const { Vardas, Pavarde, Vaikas, email } = billingtableData;
+    generateTableValues(head, body) {
+      return {
+        head: [head],
+        body: body,
+        startY: 90,
+        theme: "plain",
+        styles: {
+          halign: "left",
+          lineWidth: 0.2,
+          lineColor: "#000000",
+          cellPadding: 2,
+          fontSize: 12,
+        },
+        headStyles: {
+          font: "Arial Unicode MS Bold",
+          fontStyle: "bold",
+        },
+        bodyStyles: {
+          fontSize: 12,
+          font: "Arialuni",
+        },
+      };
+    },
+    generatePersonalInfo(doc, person) {
+      const { parent, no, email } = person;
+      const {
+        selectedDate = "",
+        fullName = "",
+        accountNumber = "",
+      } = this.$data || {};
+
       doc.setFont("Arial Unicode MS Bold", "bold");
 
       doc.setFontSize(12);
       doc.text("SĄSKAITA FAKTŪRA", 105, 20, null, null, "center");
-      doc.text("Serija MED. Nr. 23-09-108", 105, 26, null, null, "center");
+      doc.text(
+        `Serija MED. Nr. ${getCurrentYearAndMonth()}-${no}`,
+        105,
+        26,
+        null,
+        null,
+        "center"
+      );
       doc.setFont("Arialuni", "normal");
-      doc.text(this.getCurrrentDate(), 105, 32, null, null, "center");
+      doc.text(selectedDate, 105, 32, null, null, "center");
 
       const rightAligment = 195;
       const leftAlignment = 14;
@@ -73,96 +133,161 @@ export default {
       doc.setFont("Arial Unicode MS Bold", "bold");
       doc.text("Pirkėja", rightAligment, 60, null, null, "right");
       doc.setFont("Arialuni", "normal");
-      doc.text(
-        `${Vardas} ${Pavarde} (${Vaikas})`,
-        rightAligment,
-        66,
-        null,
-        null,
-        "right"
-      );
+      doc.text(`${parent}`, rightAligment, 66, null, null, "right");
       doc.text(`El. p. ${email}`, rightAligment, 72, null, null, "right");
 
       doc.setFont("Arial Unicode MS Bold", "bold");
       doc.text("Pardavėja", leftAlignment, 60);
       doc.setFont("Arialuni", "normal");
-      doc.text("R J R", leftAlignment, 66);
+      doc.text(fullName, leftAlignment, 66);
       doc.text("Sąskaita AB „Swedbank“", leftAlignment, 72);
-      doc.text("Sąskaitos numeris", leftAlignment, 78);
+      doc.text(accountNumber, leftAlignment, 78);
     },
-    transfromArrayOfObjectsIntoObject(arr) {
-      const object = arr.reduce((acc, current) => {
-        return { ...acc, ...current };
-      }, {});
-      return object;
-    },
-    async generatePDF() {
-      await jsPDF.API.events.push(["addFonts", callAddFont]);
-      await jsPDF.API.events.push(["addFonts", callAddFontBold]);
-
-      const doc = new jsPDF();
-
-      let { headers, tableData } = this;
-
-      tableData.forEach((row, index) => {
-        const billingtableData = this.transfromArrayOfObjectsIntoObject(row);
-        this.addBillingtableData(doc, billingtableData);
-
-        // remove first 4 elements of headers
-        var head = [headers.slice(4)];
-        // remove first 4 elements of each row
-        var body = [row.slice(4)];
-
-        let finalSum = row.find((item) => item["Suma"]).Suma;
-        let lastRows = [
+    generateBodyTable(amount, price) {
+      return [
+        [
+          {
+            content: "Anglų k. pamokėlės",
+            halign: "left",
+          },
+          {
+            content: "Vnt.",
+            halign: "left",
+          },
+          // kiekis
+          {
+            content: `${amount}`,
+            halign: "left",
+          },
+          // kaina
+          {
+            content: `${price}`,
+            halign: "left",
+          },
+          // suma
+          {
+            content: `${amount * price}`,
+            halign: "left",
+          },
+        ],
+        [
           {
             content: "Viso",
             colSpan: 4,
             halign: "left",
           },
           {
-            content: `${finalSum}`,
+            content: `${amount * price}`,
             colSpan: 1,
             halign: "left",
           },
-        ];
+        ],
+      ];
+    },
+    async generatePDF() {
+      let { bodyExcel, price } = this;
 
-        body.push(lastRows);
+      bodyExcel.forEach((person) => {
+        let doc = new jsPDF();
+        let { amount, parent } = person;
 
-        doc.autoTable({
-          head,
-          body,
-          startY: 90,
-          theme: "plain",
-          styles: {
-            halign: "left",
-            lineWidth: 0.2,
-            lineColor: "#000000",
-            cellPadding: 2,
-            fontSize: 12,
-          },
-          headStyles: {
-            font: "Arial Unicode MS Bold",
-            fontStyle: "bold",
-          },
-          bodyStyles: {
-            fontSize: 12,
-            font: "Arialuni",
-          },
-        });
-
-        index + 2 <= tableData.length ? doc.addPage() : null;
+        this.generatePersonalInfo(doc, person);
+        const bodyTable = this.generateBodyTable(Number(amount), price);
+        doc.autoTable(this.generateTableValues(headersTable, bodyTable));
+        doc.save(`Sąskaita_${parent}.pdf`);
       });
-
-      doc.save(`Sąskaitos_${this.getCurrrentDate()}.pdf`);
+      this.isLoading = false;
     },
   },
 };
 </script>
 
 <style scoped>
-.billGenerator {
+.bill-generator {
   display: flex;
   flex-direction: column;
+  align-items: center;
+  height: 100vh;
+}
+
+.bill-generator_input-fields {
+  display: flex;
+  flex-direction: column;
+  gap: 10px;
+  max-width: 400px;
+  margin: 0 auto;
+  padding: 20px;
+  background-color: #f9f9f9;
+  border-radius: 8px;
+  box-shadow: 0 4px 6px rgba(0, 0, 0, 0.1);
+}
+
+.bill-generator_input-fields label {
+  font-size: 14px;
+  font-weight: bold;
+  margin-bottom: 5px;
+  color: #333;
+}
+
+.bill-generator_input-fields input {
+  padding: 10px;
+  font-size: 16px;
+  border: 1px solid #ddd;
+  border-radius: 4px; /* Rounded corners for inputs */
+  outline: none;
+}
+
+.bill-generator_input-fields input:focus {
+  border-color: #007bff; /* Highlight the input on focus */
+  box-shadow: 0 0 5px rgba(0, 123, 255, 0.5); /* Focus effect */
+}
+
+.bill-generator input[type="file"],
+.bill-generator button {
+  margin-bottom: 10px; /* Adds spacing between the input and button */
+  width: 100%; /* Make the input and button take full width, but only up to the width of the container */
+  max-width: 300px; /* Limits the width of the input and button */
+}
+
+.bill-generator button {
+  cursor: pointer;
+  padding: 10px;
+  background-color: #4caf50;
+  color: white;
+  border: none;
+  border-radius: 5px;
+  font-size: 16px;
+  margin: 10px;
+}
+
+.bill-generator button:disabled {
+  background-color: #ccc;
+  cursor: not-allowed;
+}
+
+.cosmic-button {
+  position: relative;
+  padding: 12px 24px;
+  font-size: 16px;
+  font-weight: bold;
+  text-transform: uppercase;
+  border: 2px solid transparent;
+  border-radius: 8px;
+  background: linear-gradient(135deg, #8e2de2, #4a00e0);
+  color: #fff;
+  cursor: pointer;
+  outline: none;
+  transition: all 0.3s ease;
+  box-shadow: 0 0 15px rgba(255, 255, 255, 0.2), 0 0 25px rgba(72, 61, 139, 0.5);
+}
+
+.cosmic-button:hover {
+  background: linear-gradient(135deg, #4a00e0, #8e2de2); /* Hover effect */
+  box-shadow: 0 0 30px rgba(255, 255, 255, 0.4), 0 0 40px rgba(72, 61, 139, 0.7);
+}
+
+.cosmic-button:focus {
+  outline: none;
+  box-shadow: 0 0 20px rgba(255, 255, 255, 0.6), 0 0 40px rgba(72, 61, 139, 1);
 }
 </style>
