@@ -2,8 +2,10 @@
   <div class="billGenerator">
     <h1>{{ msg }}</h1>
     <div>
-      <input type="file" @change="getExcelFiletableData" />
-      <button @click="generatePDF">download PDF</button>
+      <input type="file" @change="getExcelextractedExcelData" />
+      <button @click="generatePDF" :disabled="isPDFLoading">
+        {{ isPDFLoading ? "Generuojami PDF" : "gauti PDF" }}
+      </button>
     </div>
   </div>
 </template>
@@ -13,8 +15,10 @@ import { jsPDF } from "jspdf";
 import readXlsxFile from "read-excel-file";
 import "jspdf-autotable";
 
-import { callAddFont } from "@/assets/fonts/ARIALUNI-normal.js";
-import { callAddFontBold } from "@/assets/fonts/Arial Unicode MS Bold-bold.js";
+import { getCurrrentDate, getCurrentYearAndMonth } from "@/helpers/date.js";
+import { loadFonts } from "@/helpers/fonts.js";
+import { createObjectsFromTwoArrays } from "@/helpers/dataTransformations.js";
+import { headersTable } from "@/constants.js";
 
 export default {
   name: "BillGenerator",
@@ -23,49 +27,72 @@ export default {
   },
   data() {
     return {
-      headers: null,
-      tableData: [],
+      headersExcel: null,
+      bodyExcel: null,
+      isPDFLoading: false,
     };
   },
+  created() {
+    loadFonts();
+  },
   methods: {
-    getExcelFiletableData(event) {
-      console.log(process);
+    getExcelextractedExcelData(event) {
+      let { headersExcel } = this;
       let xlsxfile = event.target.files ? event.target.files[0] : null;
-      readXlsxFile(xlsxfile).then((filetableData) => {
-        this.transformExceltableData(filetableData);
-      });
-    },
-    transformExceltableData(exceltableData) {
-      this.headers = exceltableData[0];
-      this.tableData = exceltableData.slice(1).map((row) => {
-        return this.headers.map((header, index) => {
-          return {
-            [header]: row[index],
-            content: row[index],
-          };
-        });
-      });
-    },
-    getCurrrentDate() {
-      const dateObj = new Date();
-      const month = dateObj.getUTCMonth() + 1;
-      const day = dateObj.getUTCDate();
-      const year = dateObj.getUTCFullYear();
 
-      const pMonth = month.toString().padStart(2, "0");
-      const pDay = day.toString().padStart(2, "0");
-      const currentPaddedDate = `${year}-${pMonth}-${pDay}`;
-      return currentPaddedDate;
+      if (xlsxfile) {
+        readXlsxFile(xlsxfile)
+          .then((extractedExcelData) => {
+            headersExcel = extractedExcelData[0];
+            let body = extractedExcelData.slice(1);
+            this.bodyExcel = createObjectsFromTwoArrays(headersExcel, body);
+
+            xlsxfile = null;
+          })
+          .catch((error) => {
+            console.error("Error reading Excel file:", error);
+          });
+      }
     },
-    addBillingtableData(doc, billingtableData) {
-      const { Vardas, Pavarde, Vaikas, email } = billingtableData;
+    generateTableValues(head, body) {
+      return {
+        head: [head],
+        body: body,
+        startY: 90,
+        theme: "plain",
+        styles: {
+          halign: "left",
+          lineWidth: 0.2,
+          lineColor: "#000000",
+          cellPadding: 2,
+          fontSize: 12,
+        },
+        headStyles: {
+          font: "Arial Unicode MS Bold",
+          fontStyle: "bold",
+        },
+        bodyStyles: {
+          fontSize: 12,
+          font: "Arialuni",
+        },
+      };
+    },
+    generatePersonalInfo(doc, person) {
+      const { parent, no, email } = person;
       doc.setFont("Arial Unicode MS Bold", "bold");
 
       doc.setFontSize(12);
       doc.text("SĄSKAITA FAKTŪRA", 105, 20, null, null, "center");
-      doc.text("Serija MED. Nr. 23-09-108", 105, 26, null, null, "center");
+      doc.text(
+        `Serija MED. Nr. ${getCurrentYearAndMonth()}-${no}`,
+        105,
+        26,
+        null,
+        null,
+        "center"
+      );
       doc.setFont("Arialuni", "normal");
-      doc.text(this.getCurrrentDate(), 105, 32, null, null, "center");
+      doc.text(getCurrrentDate(), 105, 32, null, null, "center");
 
       const rightAligment = 195;
       const leftAlignment = 14;
@@ -73,14 +100,7 @@ export default {
       doc.setFont("Arial Unicode MS Bold", "bold");
       doc.text("Pirkėja", rightAligment, 60, null, null, "right");
       doc.setFont("Arialuni", "normal");
-      doc.text(
-        `${Vardas} ${Pavarde} (${Vaikas})`,
-        rightAligment,
-        66,
-        null,
-        null,
-        "right"
-      );
+      doc.text(`${parent}`, rightAligment, 66, null, null, "right");
       doc.text(`El. p. ${email}`, rightAligment, 72, null, null, "right");
 
       doc.setFont("Arial Unicode MS Bold", "bold");
@@ -90,71 +110,83 @@ export default {
       doc.text("Sąskaita AB „Swedbank“", leftAlignment, 72);
       doc.text("Sąskaitos numeris", leftAlignment, 78);
     },
-    transfromArrayOfObjectsIntoObject(arr) {
-      const object = arr.reduce((acc, current) => {
-        return { ...acc, ...current };
-      }, {});
-      return object;
-    },
-    async generatePDF() {
-      await jsPDF.API.events.push(["addFonts", callAddFont]);
-      await jsPDF.API.events.push(["addFonts", callAddFontBold]);
-
-      const doc = new jsPDF();
-
-      let { headers, tableData } = this;
-
-      tableData.forEach((row, index) => {
-        const billingtableData = this.transfromArrayOfObjectsIntoObject(row);
-        this.addBillingtableData(doc, billingtableData);
-
-        // remove first 4 elements of headers
-        var head = [headers.slice(4)];
-        // remove first 4 elements of each row
-        var body = [row.slice(4)];
-
-        let finalSum = row.find((item) => item["Suma"]).Suma;
-        let lastRows = [
+    generateBodyTable(amount, price) {
+      return [
+        [
+          {
+            content: "Anglų k. pamokėlės",
+            halign: "left",
+          },
+          {
+            content: "Vnt.",
+            halign: "left",
+          },
+          // kiekis
+          {
+            content: `${amount}`,
+            halign: "left",
+          },
+          // kaina
+          {
+            content: `${price}`,
+            halign: "left",
+          },
+          // suma
+          {
+            content: `${amount * price}`,
+            halign: "left",
+          },
+        ],
+        [
           {
             content: "Viso",
             colSpan: 4,
             halign: "left",
           },
           {
-            content: `${finalSum}`,
+            content: `${amount * price}`,
             colSpan: 1,
             halign: "left",
           },
-        ];
+        ],
+      ];
+    },
+    async generatePDF() {
+      let doc = await new jsPDF();
+      this.isPDFLoading = true;
+      let { bodyExcel } = this;
+      let price = 30;
 
-        body.push(lastRows);
+      // let logData = {
+      //   // Logging props and data
+      //   props: this.$props,
+      //   data: this.$data,
+      //   price,
+      //   headersExcel: this.headersExcel,
+      //   bodyExcel: this.bodyExcel,
+      //   generatedPDFData: [],
+      // };
 
-        doc.autoTable({
-          head,
-          body,
-          startY: 90,
-          theme: "plain",
-          styles: {
-            halign: "left",
-            lineWidth: 0.2,
-            lineColor: "#000000",
-            cellPadding: 2,
-            fontSize: 12,
-          },
-          headStyles: {
-            font: "Arial Unicode MS Bold",
-            fontStyle: "bold",
-          },
-          bodyStyles: {
-            fontSize: 12,
-            font: "Arialuni",
-          },
-        });
+      bodyExcel.forEach((person, index) => {
+        let { amount, parent } = person;
+        amount = Number(amount);
 
-        index + 2 <= tableData.length ? doc.addPage() : null;
+        // logData.generatedPDFData.push({ person, amount });
+
+        this.generatePersonalInfo(doc, person);
+        const bodyTable = this.generateBodyTable(amount, price);
+
+        doc = doc.autoTable(this.generateTableValues(headersTable, bodyTable));
+
+        // logData.generatedPDFData[index].bodyTable = bodyTable;
+        index >= 1 ? null : doc.save(`Sąskaita_${parent}.pdf`);
       });
+      this.isPDFLoading = false;
 
-      doc.save(`Sąskaitos_${this.getCurrrentDate()}.pdf`);
+      // console.log("Component Data (this.$data):", this.$data);
+      // console.log("Component Props (this.$props):", this.$props);
+      // // Log all variables and props after PDF generation
+      // console.log("All variables at the end of execution:", logData);
     },
   },
 };
