@@ -1,10 +1,10 @@
 import { jsPDF } from "jspdf";
-import { callAddFont } from "@/assets/fonts/ARIALUNI-normal.js";
-import { callAddFontBold } from "@/assets/fonts/Arial Unicode MS Bold-bold.js";
+import { addBookAntiqueBold } from "@/assets/fonts/Book-Antique-Bold.js";
+import { addBookAntiqueNormal } from "@/assets/fonts/Book-Antique-Normal.js";
 
 export const loadFonts = async () => {
-    await Promise.all([
-      jsPDF.API.events.push(["addFonts", callAddFont]),
-      jsPDF.API.events.push(["addFonts", callAddFontBold]),
-    ]);
-  };
+  await Promise.all([
+    jsPDF.API.events.push(["addFonts", addBookAntiqueBold]),
+    jsPDF.API.events.push(["addFonts", addBookAntiqueNormal]),
+  ]);
+};

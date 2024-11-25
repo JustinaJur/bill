@@ -1,7 +1,7 @@
-export const headersTable = [
-    "Paslaugos pavadinimas",
-    "Matas",
-    "Kiekis",
-    "Kaina",
-    "Suma",
-  ];
+export const tableHeaders = [
+  "Paslaugos pavadinimas",
+  "Matas",
+  "Kiekis",
+  "Kaina",
+  "Suma",
+];

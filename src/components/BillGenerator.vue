@@ -39,7 +39,7 @@ import "jspdf-autotable";
 import { getCurrentYearAndMonth, getCurrrentDate } from "@/helpers/date.js";
 import { loadFonts } from "@/helpers/fonts.js";
 import { createObjectsFromTwoArrays } from "@/helpers/dataTransformations.js";
-import { headersTable } from "@/constants.js";
+import { tableHeaders } from "@/constants.js";
 
 export default {
   name: "bill-generator",
@@ -55,7 +55,7 @@ export default {
       selectedDate: null,
       fullName: null,
       accountNumber: null,
-      price: 50,
+      price: 6,
     };
   },
   created() {
@@ -93,12 +93,12 @@ export default {
           fontSize: 12,
         },
         headStyles: {
-          font: "Arial Unicode MS Bold",
+          font: "Book Antique",
           fontStyle: "bold",
         },
         bodyStyles: {
           fontSize: 12,
-          font: "Arialuni",
+          font: "Book Antique",
         },
       };
     },
@@ -110,8 +110,11 @@ export default {
         accountNumber = "",
       } = this.$data || {};
 
-      doc.setFont("Arial Unicode MS Bold", "bold");
+      const rightAligment = 120;
+      const leftAlignment = 14;
+      const baseFont = "Book Antique";
 
+      doc.setFont(baseFont, "bold");
       doc.setFontSize(12);
       doc.text("SĄSKAITA FAKTŪRA", 105, 20, null, null, "center");
       doc.text(
@@ -122,26 +125,23 @@ export default {
         null,
         "center"
       );
-      doc.setFont("Arialuni", "normal");
+      doc.setFont(baseFont, "normal");
       doc.text(selectedDate, 105, 32, null, null, "center");
 
-      const rightAligment = 195;
-      const leftAlignment = 14;
+      doc.setFont(baseFont, "bold");
+      doc.text("Pirkėja", rightAligment, 60, null, null, "left");
+      doc.setFont(baseFont, "normal");
+      doc.text(`${parent}`, rightAligment, 66, null, null, "left");
+      doc.text(`El. p. ${email}`, rightAligment, 72, null, null, "left");
 
-      doc.setFont("Arial Unicode MS Bold", "bold");
-      doc.text("Pirkėja", rightAligment, 60, null, null, "right");
-      doc.setFont("Arialuni", "normal");
-      doc.text(`${parent}`, rightAligment, 66, null, null, "right");
-      doc.text(`El. p. ${email}`, rightAligment, 72, null, null, "right");
-
-      doc.setFont("Arial Unicode MS Bold", "bold");
+      doc.setFont(baseFont, "bold");
       doc.text("Pardavėja", leftAlignment, 60);
-      doc.setFont("Arialuni", "normal");
+      doc.setFont(baseFont, "normal");
       doc.text(fullName, leftAlignment, 66);
       doc.text("Sąskaita AB „Swedbank“", leftAlignment, 72);
       doc.text(accountNumber, leftAlignment, 78);
     },
-    generateBodyTable(amount, price) {
+    generateTableBody(amount, price) {
       return [
         [
           {
@@ -190,8 +190,8 @@ export default {
         let { amount, parent } = person;
 
         this.generatePersonalInfo(doc, person);
-        const bodyTable = this.generateBodyTable(Number(amount), price);
-        doc.autoTable(this.generateTableValues(headersTable, bodyTable));
+        const tableBody = this.generateTableBody(Number(amount), price);
+        doc.autoTable(this.generateTableValues(tableHeaders, tableBody));
         doc.save(`Sąskaita_${parent}.pdf`);
       });
       // this.isLoading = false;
