@@ -21,10 +21,9 @@
         class="cosmic-button"
         @click="this.generatePDF(), (this.isLoading = true)"
         :disabled="
-          bodyExcel == null || accountNumber == null || fullName == null
+          excelBody == null || accountNumber == null || fullName == null
         "
       >
-        <!-- {{ isLoading ? "Generuojami PDF" : "Gauti PDF" }} -->
         Gauti PDF
       </button>
     </div>
@@ -35,8 +34,7 @@
 import { jsPDF } from "jspdf";
 import readXlsxFile from "read-excel-file";
 import "jspdf-autotable";
-
-import { getCurrentYearAndMonth, getCurrrentDate } from "@/helpers/date.js";
+import { getCurrrentDate } from "@/helpers/date.js";
 import { loadFonts } from "@/helpers/fonts.js";
 import { createObjectsFromTwoArrays } from "@/helpers/dataTransformations.js";
 import { tableHeaders } from "@/constants.js";
@@ -48,9 +46,8 @@ export default {
   },
   data() {
     return {
-      headersExcel: null,
-      bodyExcel: null,
-      /// isLoading: false,
+      excelHeaders: null,
+      excelBody: null,
       fileName: null,
       selectedDate: null,
       fullName: null,
@@ -64,15 +61,15 @@ export default {
   },
   methods: {
     getExcelextractedExcelData(event) {
-      let { headersExcel } = this;
+      let { excelHeaders } = this;
       let xlsxfile = event.target.files ? event.target.files[0] : null;
 
       if (xlsxfile) {
         readXlsxFile(xlsxfile)
           .then((extractedExcelData) => {
-            headersExcel = extractedExcelData[0];
+            excelHeaders = extractedExcelData[0];
             let body = extractedExcelData.slice(1);
-            this.bodyExcel = createObjectsFromTwoArrays(headersExcel, body);
+            this.excelBody = createObjectsFromTwoArrays(excelHeaders, body);
           })
           .catch((error) => {
             alert("Netinkamas pdf formatas:", error);
@@ -118,7 +115,10 @@ export default {
       doc.setFontSize(12);
       doc.text("SĄSKAITA FAKTŪRA", 105, 20, null, null, "center");
       doc.text(
-        `Serija MED. Nr. ${getCurrentYearAndMonth()}-${no}`,
+        `Serija MED. Nr. ${selectedDate
+          .split("-")
+          .slice(0, 2)
+          .join("-")}-${no}`,
         105,
         26,
         null,
@@ -140,6 +140,23 @@ export default {
       doc.text(fullName, leftAlignment, 66);
       doc.text("Sąskaita AB „Swedbank“", leftAlignment, 72);
       doc.text(accountNumber, leftAlignment, 78);
+    },
+    async generatePDF() {
+      let { excelBody, price, selectedDate } = this;
+      let selectedYearAndMonth = selectedDate.split("-").slice(0, 2).join("_");
+
+      excelBody.forEach((person) => {
+        let doc = new jsPDF();
+        let { amount, child, no } = person;
+
+        let childName = child.trim().split(" ")[0];
+        let billName = `MED_${selectedYearAndMonth}_${no}_${childName}`;
+
+        this.generatePersonalInfo(doc, person);
+        const tableBody = this.generateTableBody(Number(amount), price);
+        doc.autoTable(this.generateTableValues(tableHeaders, tableBody));
+        doc.save(`${billName}.pdf`);
+      });
     },
     generateTableBody(amount, price) {
       return [
@@ -181,20 +198,6 @@ export default {
           },
         ],
       ];
-    },
-    async generatePDF() {
-      let { bodyExcel, price } = this;
-
-      bodyExcel.forEach((person) => {
-        let doc = new jsPDF();
-        let { amount, parent } = person;
-
-        this.generatePersonalInfo(doc, person);
-        const tableBody = this.generateTableBody(Number(amount), price);
-        doc.autoTable(this.generateTableValues(tableHeaders, tableBody));
-        doc.save(`Sąskaita_${parent}.pdf`);
-      });
-      // this.isLoading = false;
     },
   },
 };
