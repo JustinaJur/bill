@@ -15,7 +15,11 @@
         <input type="date" v-model="selectedDate" />
         <label>Pamokos kaina</label>
         <input type="number" v-model="price" />
-        <input type="file" @change="getExcelextractedExcelData" />
+        <input
+          type="file"
+          ref="fileInput"
+          @change="getExcelextractedExcelData"
+        />
       </div>
       <button
         class="cosmic-button"
@@ -145,7 +149,7 @@ export default {
       let { excelBody, price, selectedDate } = this;
       let selectedYearAndMonth = selectedDate.split("-").slice(0, 2).join("_");
 
-      excelBody.forEach((person) => {
+      for (const person of excelBody) {
         let doc = new jsPDF();
         let { amount, child, no } = person;
 
@@ -154,9 +158,12 @@ export default {
 
         this.generatePersonalInfo(doc, person);
         const tableBody = this.generateTableBody(Number(amount), price);
-        doc.autoTable(this.generateTableValues(tableHeaders, tableBody));
-        doc.save(`${billName}.pdf`);
-      });
+        await doc.autoTable(this.generateTableValues(tableHeaders, tableBody));
+        ///   await new Promise((resolve) => setTimeout(resolve, 100));
+        await doc.save(`${billName}.pdf`, { returnPromise: true });
+
+        this.$refs.fileInput.value = null;
+      }
     },
     generateTableBody(amount, price) {
       return [
