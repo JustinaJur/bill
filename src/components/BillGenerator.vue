@@ -159,12 +159,11 @@ export default {
         this.generatePersonalInfo(doc, person);
         const tableBody = this.generateTableBody(Number(amount), price);
         await doc.autoTable(this.generateTableValues(tableHeaders, tableBody));
-        // await new Promise((resolve) => setTimeout(resolve, 100));
         // await doc.save(`${billName}.pdf`, { returnPromise: true });
         await new Promise((resolve) => {
-          doc.save(`${billName}.pdf`, { returnPromise: true }).then(resolve);
+          doc.save(`${billName}.pdf`);
+          setTimeout(resolve, 100);
         });
-
         this.$refs.fileInput.value = null;
       }
     },
