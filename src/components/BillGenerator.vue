@@ -12,7 +12,9 @@
           v-model="accountNumber"
         />
         <label>Sąskaitos data</label>
-        <input type="date" v-model="selectedDate" />
+        <input type="date" v-model="billDate" />
+        <label>Už laikotarpį</label>
+        <input type="month" v-model="serviceDate" />
         <label>Pamokos kaina</label>
         <input type="number" v-model="price" />
         <input
@@ -38,7 +40,7 @@
 import { jsPDF } from "jspdf";
 import readXlsxFile from "read-excel-file";
 import "jspdf-autotable";
-import { getCurrrentDate } from "@/helpers/date.js";
+import { getCurrrentDate, getPreviousMonth } from "@/helpers/date.js";
 import { loadFonts } from "@/helpers/fonts.js";
 import { createObjectsFromTwoArrays } from "@/helpers/dataTransformations.js";
 import { tableHeaders } from "@/constants.js";
@@ -53,14 +55,16 @@ export default {
       excelHeaders: null,
       excelBody: null,
       fileName: null,
-      selectedDate: null,
+      billDate: null,
       fullName: null,
       accountNumber: null,
       price: 6,
+      serviceDate: null,
     };
   },
   created() {
-    this.selectedDate = getCurrrentDate();
+    this.billDate = getCurrrentDate();
+    this.serviceDate = getPreviousMonth();
     loadFonts();
   },
   methods: {
@@ -106,9 +110,10 @@ export default {
     generatePersonalInfo(doc, person) {
       const { parent, no, email } = person;
       const {
-        selectedDate = "",
+        billDate = "",
         fullName = "",
         accountNumber = "",
+        serviceDate = "",
       } = this.$data || {};
 
       const rightAligment = 120;
@@ -119,10 +124,7 @@ export default {
       doc.setFontSize(12);
       doc.text("SĄSKAITA FAKTŪRA", 105, 20, null, null, "center");
       doc.text(
-        `Serija MED. Nr. ${selectedDate
-          .split("-")
-          .slice(0, 2)
-          .join("-")}-${no}`,
+        `Serija MED. Nr. ${serviceDate}-${no}`,
         105,
         26,
         null,
@@ -130,7 +132,7 @@ export default {
         "center"
       );
       doc.setFont(baseFont, "normal");
-      doc.text(selectedDate, 105, 32, null, null, "center");
+      doc.text(billDate, 105, 32, null, null, "center");
 
       doc.setFont(baseFont, "bold");
       doc.text("Pirkėja", rightAligment, 60, null, null, "left");
@@ -146,15 +148,13 @@ export default {
       doc.text(accountNumber, leftAlignment, 78);
     },
     async generatePDF() {
-      let { excelBody, price, selectedDate } = this;
-      let selectedYearAndMonth = selectedDate.split("-").slice(0, 2).join("_");
-
+      let { excelBody, price, serviceDate } = this;
       for (const person of excelBody) {
         let doc = new jsPDF();
         let { amount, child, no } = person;
 
         let childName = child.trim().split(" ")[0];
-        let billName = `MED_${selectedYearAndMonth}_${no}_${childName}`;
+        let billName = `MED_${serviceDate}_${no}_${childName}`;
 
         this.generatePersonalInfo(doc, person);
         const tableBody = this.generateTableBody(Number(amount), price);
