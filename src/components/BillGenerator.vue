@@ -135,7 +135,7 @@ export default {
       doc.text(billDate, 105, 32, null, null, "center");
 
       doc.setFont(baseFont, "bold");
-      doc.text("Pirkėja", rightAligment, 60, null, null, "left");
+      doc.text("Pirkėja(-jas)", rightAligment, 60, null, null, "left");
       doc.setFont(baseFont, "normal");
       doc.text(`${parent}`, rightAligment, 66, null, null, "left");
       doc.text(`El. p. ${email}`, rightAligment, 72, null, null, "left");
