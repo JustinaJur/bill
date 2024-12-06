@@ -155,6 +155,7 @@ export default {
 
         let childName = child.trim().split(" ")[0];
         let billName = `MED_${serviceDate}_${no}_${childName}`;
+        console.log(no);
         this.generatePersonalInfo(doc, person);
         const tableBody = this.generateTableBody(Number(amount), price);
         await doc.autoTable(this.generateTableValues(tableHeaders, tableBody));
