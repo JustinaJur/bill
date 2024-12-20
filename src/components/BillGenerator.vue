@@ -12,9 +12,9 @@
           v-model="accountNumber"
         />
         <label>Sąskaitos data</label>
-        <input type="date" v-model="billDate" />
+        <input type="date" v-model="invDate" />
         <label>Už laikotarpį</label>
-        <input type="month" v-model="serviceDate" />
+        <input type="month" v-model="serviceYearAndMonth" />
         <label>Pamokos kaina</label>
         <input type="number" v-model="price" />
         <input
@@ -55,16 +55,16 @@ export default {
       excelHeaders: null,
       excelBody: null,
       fileName: null,
-      billDate: null,
+      invDate: null,
       fullName: null,
       accountNumber: null,
       price: 6,
-      serviceDate: null,
+      serviceYearAndMonth: null,
     };
   },
   created() {
-    this.billDate = getCurrrentDate();
-    this.serviceDate = getPreviousMonth();
+    this.invDate = getCurrrentDate();
+    this.serviceYearAndMonth = getPreviousMonth();
     loadFonts();
   },
   methods: {
@@ -84,7 +84,7 @@ export default {
           });
       }
     },
-    generateTableValues(head, body) {
+    generateTable(head, body) {
       return {
         head: [head],
         body: body,
@@ -107,13 +107,13 @@ export default {
         },
       };
     },
-    generatePersonalInfo(doc, person) {
+    generateInvText(doc, person) {
       const { parent, no, email } = person;
       const {
-        billDate = "",
+        invDate = "",
         fullName = "",
         accountNumber = "",
-        serviceDate = "",
+        serviceYearAndMonth = "",
       } = this.$data || {};
 
       const rightAligment = 120;
@@ -124,7 +124,9 @@ export default {
       doc.setFontSize(12);
       doc.text("SĄSKAITA FAKTŪRA", 105, 20, null, null, "center");
       doc.text(
-        `Serija MED. Nr. ${serviceDate}-${no}`,
+        `Serija MED. Nr. ${this.formatServiceYearAndMonth(
+          serviceYearAndMonth
+        )}_${no}`,
         105,
         26,
         null,
@@ -132,7 +134,7 @@ export default {
         "center"
       );
       doc.setFont(baseFont, "normal");
-      doc.text(billDate, 105, 32, null, null, "center");
+      doc.text(invDate, 105, 32, null, null, "center");
 
       doc.setFont(baseFont, "bold");
       doc.text("Pirkėja(-jas)", rightAligment, 60, null, null, "left");
@@ -147,21 +149,33 @@ export default {
       doc.text("Sąskaita AB „Swedbank“", leftAlignment, 72);
       doc.text(accountNumber, leftAlignment, 78);
     },
+    // converts 36 to 36,00
+    formatIntegerToPrice(int) {
+      return int.toFixed(2).replace(".", ",");
+    },
+    // converts 2024-11 to 24_11
+    formatServiceYearAndMonth(date) {
+      return date.slice(-5).replace("-", "_");
+    },
     async generatePDF() {
-      let { excelBody, price, serviceDate } = this;
+      let { excelBody, price, serviceYearAndMonth } = this;
+
       for (const person of excelBody) {
         let doc = new jsPDF();
-        let { amount, child, no } = person;
 
+        let { amount, child, no } = person;
         let childName = child.trim().split(" ")[0];
-        let billName = `MED_${serviceDate}_${no}_${childName}`;
-        console.log(no);
-        this.generatePersonalInfo(doc, person);
+        let invTitle = `MED_${this.formatServiceYearAndMonth(
+          serviceYearAndMonth
+        )}_${no}_${childName}`;
+
+        this.generateInvText(doc, person);
         const tableBody = this.generateTableBody(Number(amount), price);
-        await doc.autoTable(this.generateTableValues(tableHeaders, tableBody));
-        // await doc.save(`${billName}.pdf`, { returnPromise: true });
+        await doc.autoTable(this.generateTable(tableHeaders, tableBody));
+
+        // await doc.save(`${invTitle}.pdf`, { returnPromise: true });
         await new Promise((resolve) => {
-          doc.save(`${billName}.pdf`);
+          doc.save(`${invTitle}.pdf`);
           setTimeout(resolve, 100);
         });
         this.$refs.fileInput.value = null;
@@ -185,12 +199,12 @@ export default {
           },
           // kaina
           {
-            content: `${price}`,
+            content: `${this.formatIntegerToPrice(price)}`,
             halign: "left",
           },
           // suma
           {
-            content: `${amount * price}`,
+            content: `${this.formatIntegerToPrice(amount * price)}`,
             halign: "left",
           },
         ],
@@ -201,7 +215,7 @@ export default {
             halign: "left",
           },
           {
-            content: `${amount * price}`,
+            content: `${this.formatIntegerToPrice(amount * price)}`,
             colSpan: 1,
             halign: "left",
           },
