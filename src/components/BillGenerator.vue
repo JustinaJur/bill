@@ -123,10 +123,9 @@ export default {
       doc.setFont(baseFont, "bold");
       doc.setFontSize(12);
       doc.text("SĄSKAITA FAKTŪRA", 105, 20, null, null, "center");
+      doc.setFont(baseFont, "normal");
       doc.text(
-        `Serija MED. Nr. ${this.formatServiceYearAndMonth(
-          serviceYearAndMonth
-        )}_${no}`,
+        `Serija MED. Nr. ${serviceYearAndMonth.slice(-5)}-${no}`,
         105,
         26,
         null,
@@ -154,9 +153,9 @@ export default {
       return int.toFixed(2).replace(".", ",");
     },
     // converts 2024-11 to 24_11
-    formatServiceYearAndMonth(date) {
-      return date.slice(-5).replace("-", "_");
-    },
+    // formatServiceYearAndMonth(date) {
+    //   return date.slice(-5).replace("-", "_");
+    // },
     async generatePDF() {
       let { excelBody, price, serviceYearAndMonth } = this;
 
@@ -165,9 +164,9 @@ export default {
 
         let { amount, child, no } = person;
         let childName = child.trim().split(" ")[0];
-        let invTitle = `MED_${this.formatServiceYearAndMonth(
-          serviceYearAndMonth
-        )}_${no}_${childName}`;
+        let invTitle = `MED_${serviceYearAndMonth
+          .slice(-5)
+          .replace("-", "_")}_${no}_${childName}`;
 
         this.generateInvText(doc, person);
         const tableBody = this.generateTableBody(Number(amount), price);
