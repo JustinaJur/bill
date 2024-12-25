@@ -125,7 +125,7 @@ export default {
       doc.text("SĄSKAITA FAKTŪRA", 105, 20, null, null, "center");
       doc.setFont(baseFont, "normal");
       doc.text(
-        `Serija MED. Nr. ${serviceYearAndMonth.slice(-5)}-${no}`,
+        `Serija MED Nr. ${serviceYearAndMonth.slice(-5)}-${no}`,
         105,
         26,
         null,
@@ -152,10 +152,6 @@ export default {
     formatIntegerToPrice(int) {
       return int.toFixed(2).replace(".", ",");
     },
-    // converts 2024-11 to 24_11
-    // formatServiceYearAndMonth(date) {
-    //   return date.slice(-5).replace("-", "_");
-    // },
     async generatePDF() {
       let { excelBody, price, serviceYearAndMonth } = this;
 
