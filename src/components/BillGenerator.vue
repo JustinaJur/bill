@@ -30,7 +30,7 @@
           excelBody == null || accountNumber == null || fullName == null
         "
       >
-        Gauti PDFS
+        Gauti PDF
       </button>
     </div>
   </div>
