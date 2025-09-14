@@ -32,8 +32,6 @@
       >
         Gauti PDFS
       </button>
-      dddd
-      {{ no }}
     </div>
   </div>
 </template>
