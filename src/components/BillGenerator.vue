@@ -119,13 +119,14 @@ export default {
       const rightAligment = 120;
       const leftAlignment = 14;
       const baseFont = "Book Antique";
+      let paddedNo = String(no).padStart(2, "0");
 
       doc.setFont(baseFont, "bold");
       doc.setFontSize(12);
       doc.text("SĄSKAITA FAKTŪRA", 105, 20, null, null, "center");
       doc.setFont(baseFont, "normal");
       doc.text(
-        `Serija MED Nr. ${serviceYearAndMonth.slice(-5)}-${no}`,
+        `Serija MED Nr. ${serviceYearAndMonth.slice(-5)}-${paddedNo}`,
         105,
         26,
         null,
@@ -160,9 +161,10 @@ export default {
 
         let { amount, child, no } = person;
         let childName = child.trim().split(" ")[0];
+        let paddedNo = String(no).padStart(2, "0");
         let invTitle = `MED_${serviceYearAndMonth
           .slice(-5)
-          .replace("-", "_")}_${no}_${childName}`;
+          .replace("-", "_")}_${paddedNo}_${childName}`;
 
         this.generateInvText(doc, person);
         const tableBody = this.generateTableBody(Number(amount), price);
